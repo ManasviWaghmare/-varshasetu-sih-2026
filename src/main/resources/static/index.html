@@ -248,7 +248,9 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 .risk-zones { font-size: 12px; }
 .zone-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.1); }
 .advisory { font-size: 13px; padding: 10px; background: rgba(255, 255, 255, 0.05); border-radius: var(--radius-sm); border-left: 3px solid var(--primary-start); }
-.source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.source-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.data-sources-panel { min-width: 0; overflow: hidden; }
+.data-source-card { min-width: 0; overflow-wrap: anywhere; }
 .data-source-card { background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: var(--radius-sm); font-size: 12px; display: flex; align-items: center; gap: 8px; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.green { background: var(--success); box-shadow: 0 0 5px var(--success); }
@@ -373,23 +375,73 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
     .header { position: static; }
 }
 
+
+/* Login (weather-app theme) */
+.login-view { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #0b1e3a 0%, #134e7a 45%, #1d7fa8 75%, #37b6ce 100%); overflow: hidden; }
+.login-rain { position: absolute; inset: -50%; background: repeating-linear-gradient(transparent 0 46px, rgba(255,255,255,0.08) 46px 48px);
+    animation: rainfall 1.2s linear infinite; }
+@keyframes rainfall { from { transform: translateY(-48px); } to { transform: translateY(0); } }
+.login-card { position: relative; width: min(420px, 92vw); text-align: center; display: flex; flex-direction: column; gap: 12px; padding: 32px; }
+.login-logo { font-size: 32px; font-weight: 700; }
+.login-sub { color: var(--text-secondary); font-size: 13px; }
+.login-chips { display: flex; gap: 8px; justify-content: center; font-size: 12px; color: var(--text-secondary); }
+.login-chips span { background: rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 14px; }
+.login-guest { background: none; border: none; color: var(--primary-start); cursor: pointer; font-size: 13px; }
+.login-hint { font-size: 12px; color: var(--text-secondary); }
+.login-err { font-size: 13px; color: var(--danger); min-height: 18px; }
+/* Views */
+[hidden] { display: none !important; }
+.view { animation: fadein 0.3s ease; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+.nav-pill { background: none; border: none; cursor: pointer; font: inherit; }
+.nav-pill.active { background: rgba(79, 172, 254, 0.25); color: #fff; }
+.logout-btn { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #fff;
+    border-radius: 14px; padding: 4px 14px; font-size: 12px; cursor: pointer; }
+/* Model view */
+.model-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: 100%; }
+.model-grid .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.model-name { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.model-features { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.model-features li { background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: var(--radius-sm); display: flex; justify-content: space-between; }
+.cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 1100px) { .model-grid { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
+    <div id="view-login" class="login-view">
+        <div class="login-rain"></div>
+        <div class="login-card glass-card">
+            <div class="login-logo">🌊 VarshaSetu</div>
+            <p class="login-sub">AI Heavy Rainfall Early Warning &amp; Inundation Prediction</p>
+            <div class="login-chips"><span>⛈ Live IMD</span><span>📡 Radar</span><span>🛰 Satellite</span></div>
+            <input id="login-user" class="search-input" placeholder="Username" autocomplete="username">
+            <input id="login-pass" type="password" class="search-input" placeholder="Password" autocomplete="current-password">
+            <button class="btn-report" id="login-btn">Login</button>
+            <button class="login-guest" id="guest-btn">Continue as Guest</button>
+            <p class="login-hint">Demo login: admin / varsha123</p>
+            <p class="login-err" id="login-err"></p>
+        </div>
+    </div>
+    <div id="app" hidden>
     <header class="header glass-panel">
         <div class="header-left">
             <div class="logo">🌊 VarshaSetu</div>
             <div class="subtitle">AI Heavy Rainfall Warning</div>
         </div>
         <nav class="nav-pills" aria-label="Primary">
-            <a class="nav-pill" href="#dashboard">Dashboard</a>
-            <a class="nav-pill" href="#analytics">Analytics</a>
+            <button class="nav-pill active" data-view="dashboard">Dashboard</button>
+            <button class="nav-pill" data-view="city">City Search</button>
+            <button class="nav-pill" data-view="alerts">Alerts</button>
+            <button class="nav-pill" data-view="model">ML Model</button>
         </nav>
         <div class="header-center">
             <div class="clock" id="real-time-clock">00:00:00</div>
             <div class="date" id="current-date">Loading...</div>
         </div>
         <div class="header-right">
+            <button class="logout-btn" id="logout-btn" title="Logout">Logout</button>
             <div class="system-status">
                 <span class="pulse-dot"></span> LIVE
             </div>
@@ -408,13 +460,61 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
         </div>
     </div>
 
-    <main class="main-content" id="dashboard">
+    <main class="main-content view" id="view-dashboard">
+        <aside class="sidebar left-sidebar">
+            <div class="panel glass-card quick-stats">
+                <div class="stat-row">
+                    <span>Monitored Cities</span>
+                    <span class="stat-badge" id="total-cities">--</span>
+                </div>
+                <div class="stat-row">
+                    <span>Active Alerts</span>
+                    <span class="stat-badge warning" id="total-alerts">--</span>
+                </div>
+                <div class="stat-row">
+                    <span>Max Rainfall</span>
+                    <span class="stat-badge danger" id="max-rain">-- mm</span>
+                </div>
+            </div>
+            <div class="panel glass-card confidence-panel">
+                <h3>Prediction Confidence</h3>
+                <div class="gauge-container">
+                    <svg viewBox="0 0 36 36" class="confidence-gauge">
+                        <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <path class="gauge-fill" id="confidence-fill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        <text x="18" y="20.5" class="gauge-text" id="confidence-text">--%</text>
+                    </svg>
+                </div>
+                <div class="model-stats text-sm text-secondary mt-2 text-center" id="model-stats">Accuracy: --% | Sources: NWP, Radar, IMD</div>
+            </div>
+            <div class="panel glass-card data-sources-panel">
+                <h3>Data Sources</h3>
+                <div class="source-grid" id="data-sources-grid">
+                    <div class="data-source-card"><span class="status-dot green"></span> Satellite</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> Radar</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> AWS</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> NWP</div>
+                </div>
+            </div>
+        </aside>
+        <section class="center-section">
+            <div class="map-container glass-card">
+                <div id="map"></div>
+                <div class="map-legend" id="map-legend">
+                    <div class="legend-item"><span class="legend-color" style="background:#10b981"></span> Light / Safe</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#f59e0b"></span> Moderate</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#f97316"></span> Heavy</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#ef4444"></span> Very Heavy / Severe</div>
+                </div>
+            </div>
+    </main>
+
+    <main class="main-content view" id="view-city" hidden>
         <aside class="sidebar left-sidebar">
             <div class="panel glass-card search-panel">
                 <input type="text" id="city-search" class="search-input" placeholder="🔍 Search city..." autocomplete="off">
                 <div class="city-list" id="city-list"></div>
             </div>
-
             <div class="panel glass-card city-card" id="city-info-panel">
                 <h2 id="selected-city-name">Select a city</h2>
                 <p id="selected-city-state" class="text-secondary">--</p>
@@ -438,73 +538,20 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
                 </div>
                 <button class="btn-report" id="download-report" title="Download city report as CSV">⬇ Download Report</button>
             </div>
-
+        </aside>
+        <section class="center-section">
             <div class="panel glass-card forecast-panel">
                 <h3>5-Day Forecast</h3>
                 <div class="forecast-strip" id="forecast-strip">
                     <p class="text-secondary text-sm">Select a city to load forecast.</p>
                 </div>
             </div>
-
-            <div class="panel glass-card confidence-panel">
-                <h3>Prediction Confidence</h3>
-                <div class="gauge-container">
-                    <svg viewBox="0 0 36 36" class="confidence-gauge">
-                        <path class="gauge-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <path class="gauge-fill" id="confidence-fill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        <text x="18" y="20.5" class="gauge-text" id="confidence-text">--%</text>
-                    </svg>
-                </div>
-                <div class="model-stats text-sm text-secondary mt-2 text-center" id="model-stats">Accuracy: --% | Sources: NWP, Radar, IMD</div>
-            </div>
-
-            <div class="panel glass-card quick-stats">
-                <div class="stat-row">
-                    <span>Monitored Cities</span>
-                    <span class="stat-badge" id="total-cities">--</span>
-                </div>
-                <div class="stat-row">
-                    <span>Active Alerts</span>
-                    <span class="stat-badge warning" id="total-alerts">--</span>
-                </div>
-                <div class="stat-row">
-                    <span>Max Rainfall</span>
-                    <span class="stat-badge danger" id="max-rain">-- mm</span>
-                </div>
-            </div>
-        </aside>
-
-        <section class="center-section">
-            <div class="map-container glass-card">
-                <div id="map"></div>
-                <div class="map-legend" id="map-legend">
-                    <div class="legend-item"><span class="legend-color" style="background:#10b981"></span> Light / Safe</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#f59e0b"></span> Moderate</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#f97316"></span> Heavy</div>
-                    <div class="legend-item"><span class="legend-color" style="background:#ef4444"></span> Very Heavy / Severe</div>
-                </div>
-            </div>
+            <div class="chart-container glass-card">
+            <h3>Rainfall Trend (7 Days)</h3>
+            <div class="chart-wrapper"><canvas id="rainfallTrendChart"></canvas></div>
+        </div>
         </section>
-
         <aside class="sidebar right-sidebar">
-            <div class="panel glass-card alerts-panel">
-                <div class="panel-header">
-                    <h3>Active Alerts</h3>
-                    <button class="btn-icon" id="refresh-alerts" title="Refresh Alerts">↻</button>
-                </div>
-                <div class="severity-filter" id="severity-filter">
-                    <button class="sev-btn active" data-level="ALL">All</button>
-                    <button class="sev-btn" data-level="RED">Red</button>
-                    <button class="sev-btn" data-level="ORANGE">Orange</button>
-                    <button class="sev-btn" data-level="YELLOW">Yellow</button>
-                </div>
-                <label class="notify-toggle"><input type="checkbox" id="notify-toggle"> Sound + notification</label>
-                <div class="alerts-list" id="active-alerts-list">
-                    <div class="loading-skeleton skeleton-alert"></div>
-                    <div class="loading-skeleton skeleton-alert"></div>
-                </div>
-            </div>
-
             <div class="panel glass-card inundation-panel" id="inundation-panel">
                 <h3>Inundation Risk</h3>
                 <div class="risk-header">
@@ -523,24 +570,32 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
                 <div class="risk-zones mt-2" id="risk-zones-list"></div>
                 <div class="advisory mt-4" id="evacuation-advisory">No active advisories.</div>
             </div>
-
-            <div class="panel glass-card data-sources-panel">
-                <h3>Data Sources</h3>
-                <div class="source-grid" id="data-sources-grid">
-                    <div class="data-source-card"><span class="status-dot green"></span> Satellite</div>
-                    <div class="data-source-card"><span class="status-dot green"></span> Radar</div>
-                    <div class="data-source-card"><span class="status-dot green"></span> AWS</div>
-                    <div class="data-source-card"><span class="status-dot green"></span> NWP</div>
-                </div>
-            </div>
         </aside>
     </main>
 
-    <section class="bottom-section" id="analytics">
-        <div class="chart-container glass-card">
-            <h3>Rainfall Trend (7 Days)</h3>
-            <div class="chart-wrapper"><canvas id="rainfallTrendChart"></canvas></div>
-        </div>
+    <main class="main-content view" id="view-alerts" hidden>
+        <aside class="sidebar left-sidebar">
+            <div class="panel glass-card alerts-panel">
+                <div class="panel-header">
+                    <h3>Active Alerts</h3>
+                    <button class="btn-icon" id="refresh-alerts" title="Refresh Alerts">↻</button>
+                </div>
+                <div class="severity-filter" id="severity-filter">
+                    <button class="sev-btn active" data-level="ALL">All</button>
+                    <button class="sev-btn" data-level="RED">Red</button>
+                    <button class="sev-btn" data-level="ORANGE">Orange</button>
+                    <button class="sev-btn" data-level="YELLOW">Yellow</button>
+                </div>
+                <label class="notify-toggle"><input type="checkbox" id="notify-toggle"> Sound + notification</label>
+                <div class="alerts-list" id="active-alerts-list">
+                    <div class="loading-skeleton skeleton-alert"></div>
+                    <div class="loading-skeleton skeleton-alert"></div>
+                </div>
+            </div>
+        </aside>
+        <section class="center-section">
+            <section class="bottom-section" id="analytics">
+        
         <div class="chart-container glass-card">
             <h3>District Comparison (Departure %)</h3>
             <div class="chart-wrapper"><canvas id="districtComparisonChart"></canvas></div>
@@ -549,9 +604,45 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
             <h3>Alert Distribution</h3>
             <div class="chart-wrapper"><canvas id="alertDistributionChart"></canvas></div>
         </div>
-    </section>
+        </section>
+    </main>
 
-    <footer class="footer">
+    <main class="main-content view" id="view-model" hidden>
+        <section class="center-section">
+            <div class="model-grid">
+                <div class="panel glass-card">
+                    <h3>ML Model</h3>
+                    <div class="model-name" id="model-name">Loading...</div>
+                    <p class="text-secondary text-sm" id="model-desc"></p>
+                </div>
+                <div class="panel glass-card">
+                    <h3>Engine &amp; Accuracy</h3>
+                    <div class="stat-row"><span>Engine</span><span class="stat-badge" id="model-engine">--</span></div>
+                    <div class="stat-row"><span>Accuracy</span><span class="stat-badge" id="model-accuracy">--</span></div>
+                    <div class="stat-row"><span>Training samples</span><span class="stat-badge" id="model-samples">--</span></div>
+                </div>
+                <div class="panel glass-card">
+                    <h3>Input Features</h3>
+                    <ul class="model-features" id="model-features"><li>Loading...</li></ul>
+                </div>
+                <div class="panel glass-card">
+                    <h3>Rainfall Categories (IMD)</h3>
+                    <div class="cat-grid">
+                        <span class="cat-badge" style="background:#10b981">NR 0mm</span>
+                        <span class="cat-badge" style="background:#34d399">LD 0.1-2.4</span>
+                        <span class="cat-badge" style="background:#f59e0b">D 2.5-7.5</span>
+                        <span class="cat-badge" style="background:#f97316">N 7.6-35.5</span>
+                        <span class="cat-badge" style="background:#ef4444">E 35.6-64.4</span>
+                        <span class="cat-badge" style="background:#b91c1c">LE 64.5+</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    </div>
+    <footer class="footer" id="app-footer" hidden>
         <p>Powered by IMD Data | Ministry of Earth Sciences | SIH 2026</p>
         <p class="team-credit">Team Xyron</p>
     </footer>
@@ -892,12 +983,98 @@ const CAT_COLORS = { NR: '#10b981', LD: '#34d399', D: '#f59e0b', N: '#f97316', E
 
 const API_BASE = '/api';
 
+
+/* ---- Views, login gate, ML model info ---- */
+let mapReady = false;
+let modelLoaded = false;
+function ensureMap() {
+    if (mapReady || !window.mapManager) return;
+    window.mapManager.initMap('map');
+    window.mapManager.onCitySelect = (name) => { showView('city'); selectCity(name); };
+    window.mapManager.updateCityMarkers(allCities, activeAlerts);
+    window.mapManager.updateStationMarkers(allCities);
+    window.mapManager.updateRainfallHeatmap(allCities);
+    mapReady = true;
+}
+function resizeCharts() {
+    Object.values(charts).forEach((c) => { try { if (c && c.resize) c.resize(); } catch (e) {} });
+}
+function showView(name) {
+    document.querySelectorAll('.view').forEach((v) => { v.hidden = v.id !== 'view-' + name; });
+    document.querySelectorAll('.nav-pill').forEach((b) => { b.classList.toggle('active', b.dataset.view === name); });
+    if (name === 'dashboard') {
+        ensureMap();
+        if (window.mapManager && window.mapManager.map) {
+            try { window.mapManager.map.invalidateSize(); } catch (e) {}
+        }
+    }
+    if (name === 'city' || name === 'alerts') resizeCharts();
+    if (name === 'model' && !modelLoaded) fetchModelInfo();
+}
+async function fetchModelInfo() {
+    try {
+        const res = await fetch(`${API_BASE}/model/stats`);
+        const json = await res.json();
+        if (json.status !== 'success' || !json.data) return;
+        const d = json.data;
+        setText('model-name', d.model_name || 'Rainfall Prediction Model');
+        setText('model-desc', d.description || '');
+        setText('model-engine', d.engine || '--');
+        setText('model-accuracy', (d.accuracy != null ? d.accuracy + '%' : '--'));
+        setText('model-samples', String((d.training_info && d.training_info.samples_used) ?? '--'));
+        const ul = document.getElementById('model-features');
+        if (ul && d.feature_importances) {
+            ul.innerHTML = '';
+            Object.entries(d.feature_importances).forEach(([k, v]) => {
+                const li = document.createElement('li');
+                li.innerHTML = '<span>' + escHtml(k) + '</span><span>' + escHtml(String(Math.round(Number(v) * 100)) + '%') + '</span>';
+                ul.appendChild(li);
+            });
+        }
+        modelLoaded = true;
+    } catch (e) { console.warn('model info failed', e); }
+}
+function enterApp() {
+    document.getElementById('view-login').hidden = true;
+    document.getElementById('app').hidden = false;
+    const f = document.getElementById('app-footer');
+    if (f) f.hidden = false;
+    showView('dashboard');
+}
+function setupAuth() {
+    if (sessionStorage.getItem('vs_auth') === '1') { enterApp(); return; }
+    const doLogin = (user, pass) => {
+        const err = document.getElementById('login-err');
+        if ((user === 'admin' && pass === 'varsha123') || user === '__guest__') {
+            sessionStorage.setItem('vs_auth', '1');
+            enterApp();
+        } else if (err) { err.textContent = 'Invalid credentials. Try admin / varsha123 or Guest.'; }
+    };
+    const lb = document.getElementById('login-btn');
+    if (lb) lb.addEventListener('click', () => {
+        doLogin(document.getElementById('login-user').value.trim(), document.getElementById('login-pass').value);
+    });
+    const lp = document.getElementById('login-pass');
+    if (lp) lp.addEventListener('keydown', (e) => { if (e.key === 'Enter') lb.click(); });
+    const gb = document.getElementById('guest-btn');
+    if (gb) gb.addEventListener('click', () => doLogin('__guest__', ''));
+    const ob = document.getElementById('logout-btn');
+    if (ob) ob.addEventListener('click', () => {
+        sessionStorage.removeItem('vs_auth');
+        document.getElementById('app').hidden = true;
+        const f = document.getElementById('app-footer');
+        if (f) f.hidden = true;
+        document.getElementById('view-login').hidden = false;
+    });
+    document.querySelectorAll('.nav-pill').forEach((b) => {
+        b.addEventListener('click', () => showView(b.dataset.view));
+    });
+}
+document.addEventListener('DOMContentLoaded', setupAuth);
+
 document.addEventListener('DOMContentLoaded', async () => {
-    if (window.mapManager) {
-        window.mapManager.initMap('map');
-        window.mapManager.onCitySelect = selectCity;
-    } else {
-        console.error('mapManager not loaded; check map_layers.js script order');
+    if (!window.mapManager) {
+        console.error('mapManager not loaded');
     }
 
     initCharts();
@@ -931,7 +1108,7 @@ function setupListeners() {
                 .forEach((city) => {
                     const div = document.createElement('div');
                     div.className = 'city-list-item';
-                    div.textContent = city.state ? `${city.name}, ${city.state}` : city.name;
+                    div.textContent = city.country ? `${city.name}, ${city.country}` : (city.state ? `${city.name}, ${city.state}` : city.name);
                     div.onclick = () => {
                         searchInput.value = '';
                         cityList.innerHTML = '';
@@ -952,7 +1129,7 @@ function setupListeners() {
             }
             await loadAlerts();
             // keep map markers in sync with fresh alerts
-            if (window.mapManager) window.mapManager.updateCityMarkers(allCities, activeAlerts);
+            if (window.mapManager && window.mapManager.map) window.mapManager.updateCityMarkers(allCities, activeAlerts);
         });
     }
 
@@ -985,7 +1162,7 @@ async function loadInitialData() {
 
         await loadAlerts();
 
-        if (window.mapManager) {
+        if (window.mapManager && window.mapManager.map) {
             window.mapManager.updateCityMarkers(allCities, activeAlerts);
             window.mapManager.updateStationMarkers(allCities);
             window.mapManager.updateRainfallHeatmap(allCities);
@@ -1082,8 +1259,8 @@ async function selectCity(cityName) {
     const cityData = allCities.find((c) => c.name === cityName);
     if (cityData) {
         setText('selected-city-name', cityData.name);
-        setText('selected-city-state', cityData.state || 'India');
-        if (window.mapManager) window.mapManager.highlightCity(cityName);
+        setText('selected-city-state', cityData.country || cityData.state || '');
+        if (window.mapManager && window.mapManager.map) window.mapManager.highlightCity(cityName);
     } else {
         setText('selected-city-name', cityName);
     }
@@ -1131,9 +1308,9 @@ async function selectCity(cityName) {
             if (iJson && iJson.status === 'success' && iJson.data) {
                 updateInundationPanel(iJson.data);
                 lastInundation = iJson.data;
-                if (window.mapManager) window.mapManager.updateInundationZones(iJson.data);
+                if (window.mapManager && window.mapManager.map) window.mapManager.updateInundationZones(iJson.data);
             }
-        } else if (window.mapManager) {
+        } else if (window.mapManager && window.mapManager.map) {
             window.mapManager.clearInundationZones();
         }
     } catch (e) {

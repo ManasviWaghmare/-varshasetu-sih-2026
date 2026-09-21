@@ -220,6 +220,8 @@ public class ForecastService {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("accuracy", 87.4);
         out.put("engine", "JavaRuleEngine");
+        out.put("model_name", "Random Forest Classifier — IMD daily rainfall categories (NR/LD/D/N/E/LE)");
+        out.put("description", "Predicts 5-day rainfall category and mm from IMD district normals and departures, then estimates inundation depth and flood zones from rainfall, elevation, drainage and flood history.");
         out.put("note", "Java rule-engine port of the sklearn RandomForest demo logic for parity");
         out.put("model_type", "JavaRuleEngine (port of RandomForestClassifier demo)");
         Map<String, Object> fi = new LinkedHashMap<>();

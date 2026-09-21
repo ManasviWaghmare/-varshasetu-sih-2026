@@ -21,6 +21,8 @@ public class City {
     @JsonProperty("is_coastal")
     private boolean coastal;
 
+    private String country;
+
     @JsonProperty("historical_flood_years")
     private List<Integer> historicalFloodYears;
 
@@ -50,6 +52,9 @@ public class City {
 
     public boolean isCoastal() { return coastal; }
     public void setCoastal(boolean coastal) { this.coastal = coastal; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
 
     public List<Integer> getHistoricalFloodYears() { return historicalFloodYears; }
     public void setHistoricalFloodYears(List<Integer> historicalFloodYears) { this.historicalFloodYears = historicalFloodYears; }

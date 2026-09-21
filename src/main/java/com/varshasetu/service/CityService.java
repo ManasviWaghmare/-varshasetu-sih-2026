@@ -19,7 +19,7 @@ public class CityService {
     @PostConstruct
     public void load() {
         try {
-            ClassPathResource resource = new ClassPathResource("data/indian_cities.json");
+            ClassPathResource resource = new ClassPathResource("data/world_cities.json");
             try (InputStream in = resource.getInputStream()) {
                 ObjectMapper mapper = new ObjectMapper();
                 cities = mapper.readValue(in, new TypeReference<List<City>>() {});
