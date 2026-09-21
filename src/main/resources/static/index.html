@@ -407,6 +407,12 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 1100px) { .model-grid { grid-template-columns: 1fr; } }
 
+/* Resources */
+.resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; margin-top: 16px; }
+.resource-card { text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 8px; }
+.resource-title { font-size: 16px; font-weight: 700; }
+.resource-link { font-size: 12px; color: var(--primary-start); }
+@media (max-width: 1100px) { .resource-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -435,6 +441,7 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
             <button class="nav-pill" data-view="city">City Search</button>
             <button class="nav-pill" data-view="alerts">Alerts</button>
             <button class="nav-pill" data-view="model">ML Model</button>
+            <button class="nav-pill" data-view="resources">Resources</button>
         </nav>
         <div class="header-center">
             <div class="clock" id="real-time-clock">00:00:00</div>
@@ -642,6 +649,42 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 
 
     </div>
+    <main class="main-content view" id="view-resources" hidden>
+        <section class="center-section">
+            <div class="panel glass-card">
+                <h3>Flood Data Resources</h3>
+                <p class="text-secondary text-sm">Authoritative global sources for flood observation, forecasting and research.</p>
+            </div>
+            <div class="resource-grid">
+                <a class="resource-card glass-card" href="https://www.earthdata.nasa.gov/topics/human-dimensions/floods" target="_blank" rel="noopener">
+                    <div class="resource-title">NASA Earthdata — Floods</div>
+                    <p class="text-secondary text-sm">Satellite flood datasets, rainfall and human-dimensions data from NASA missions.</p>
+                    <span class="resource-link">earthdata.nasa.gov ↗</span>
+                </a>
+                <a class="resource-card glass-card" href="https://un-spider.org/links-and-resources/data-sources/daotm-flood-web-maps" target="_blank" rel="noopener">
+                    <div class="resource-title">UN-SPIDER — Flood Web Maps</div>
+                    <p class="text-secondary text-sm">UN directory of flood web maps and recommended space-based data sources.</p>
+                    <span class="resource-link">un-spider.org ↗</span>
+                </a>
+                <a class="resource-card glass-card" href="https://guides.lib.uchicago.edu/c.php?g=297202&p=1983953" target="_blank" rel="noopener">
+                    <div class="resource-title">UChicago Library — Flood Data Guide</div>
+                    <p class="text-secondary text-sm">Curated guide to flood datasets, GIS layers and research references.</p>
+                    <span class="resource-link">guides.lib.uchicago.edu ↗</span>
+                </a>
+                <a class="resource-card glass-card" href="https://www.fao.org/home/en/" target="_blank" rel="noopener">
+                    <div class="resource-title">FAO — Food and Agriculture Organization</div>
+                    <p class="text-secondary text-sm">Global water, agriculture and food-security data for flood impact assessment.</p>
+                    <span class="resource-link">fao.org ↗</span>
+                </a>
+                <a class="resource-card glass-card" href="https://global-flood.emergency.copernicus.eu/technical-information/glofas-gfm/" target="_blank" rel="noopener">
+                    <div class="resource-title">Copernicus GloFAS — Global Flood Awareness</div>
+                    <p class="text-secondary text-sm">Operational global flood forecasting and monitoring from the EU Copernicus programme.</p>
+                    <span class="resource-link">global-flood.emergency.copernicus.eu ↗</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
     <footer class="footer" id="app-footer" hidden>
         <p>Powered by IMD Data | Ministry of Earth Sciences | SIH 2026</p>
         <p class="team-credit">Team Xyron</p>
