@@ -407,6 +407,24 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 1100px) { .model-grid { grid-template-columns: 1fr; } }
 
+/* Model suite */
+.model-suite-card { grid-column: 1 / -1; }
+.suite-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.suite-card { background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); border-radius: var(--radius-sm); padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.suite-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.suite-name { font-weight: 700; font-size: 14px; }
+.st-badge { font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 12px; letter-spacing: 0.5px; }
+.st-active { background: rgba(16,185,129,0.25); color: #10b981; }
+.st-simulated { background: rgba(245,158,11,0.25); color: #f59e0b; }
+.st-roadmap { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
+.hazard-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.hazard-chip { font-size: 11px; background: rgba(79,172,254,0.15); padding: 2px 9px; border-radius: 11px; }
+.suite-detail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.suite-detail h4 { font-size: 13px; margin-bottom: 8px; }
+.hourly-bars { display: flex; align-items: flex-end; gap: 2px; height: 70px; }
+.hourly-bars .hbar { flex: 1; background: linear-gradient(to top, #4facfe, #00f2fe); border-radius: 2px 2px 0 0; min-height: 2px; }
+@media (max-width: 1100px) { .suite-grid, .suite-detail { grid-template-columns: 1fr; } }
+
 /* Resources */
 .resource-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; width: 100%; margin-top: 16px; }
 .resource-card { text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 8px; }
@@ -641,6 +659,21 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
                         <span class="cat-badge" style="background:#f97316">N 7.6-35.5</span>
                         <span class="cat-badge" style="background:#ef4444">E 35.6-64.4</span>
                         <span class="cat-badge" style="background:#b91c1c">LE 64.5+</span>
+                    </div>
+                </div>
+                <div class="panel glass-card model-suite-card">
+                    <h3>AI Model Suite — All Hazards</h3>
+                    <div class="suite-grid" id="model-suite"><p class="text-secondary text-sm">Loading models...</p></div>
+                    <div class="suite-detail">
+                        <div class="suite-live">
+                            <h4>LSTM 24h intensity — <span id="lstm-city">--</span></h4>
+                            <div class="hourly-bars" id="lstm-bars"></div>
+                            <p class="text-secondary text-sm" id="lstm-meta"></p>
+                        </div>
+                        <div class="suite-live">
+                            <h4>CNN segmentation — <span id="cnn-city">--</span></h4>
+                            <p class="text-sm" id="cnn-meta"></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1083,7 +1116,7 @@ function showView(name) {
         }
     }
     if (name === 'city' || name === 'alerts') resizeCharts();
-    if (name === 'model' && !modelLoaded) fetchModelInfo();
+    if (name === 'model') { fetchModelInfo(); fetchModelSuite(); }
 }
 async function fetchModelInfo() {
     try {
@@ -1105,9 +1138,72 @@ async function fetchModelInfo() {
                 ul.appendChild(li);
             });
         }
-        modelLoaded = true;
+        if (!modelLoaded) modelLoaded = true;
     } catch (e) { console.warn('model info failed', e); }
 }
+
+async function fetchModelSuite() {
+    const grid = document.getElementById('model-suite');
+    if (grid && !grid.dataset.done) {
+        try {
+            const res = await fetch(`${API_BASE}/model/suite`);
+            const json = await res.json();
+            if (json.status === 'success' && Array.isArray(json.data)) {
+                grid.innerHTML = '';
+                json.data.forEach((m) => {
+                    const st = String(m.status || '').toLowerCase();
+                    const card = document.createElement('div');
+                    card.className = 'suite-card';
+                    const acc = m.accuracy != null ? '<span class="stat-badge">' + escHtml(String(m.accuracy)) + '%</span>' : '';
+                    const hz = Array.isArray(m.hazards) ? m.hazards.map((x) => '<span class="hazard-chip">' + escHtml(x) + '</span>').join('') : '';
+                    card.innerHTML =
+                        '<div class="suite-head"><span class="suite-name">' + escHtml(m.name) + '</span>' +
+                        '<span class="st-badge st-' + escHtml(st) + '">' + escHtml(String(m.status).toUpperCase()) + '</span></div>' +
+                        '<div class="hazard-row">' + hz + '</div>' +
+                        '<p class="text-secondary text-sm">' + escHtml(m.description) + '</p>' + acc;
+                    grid.appendChild(card);
+                });
+                grid.dataset.done = '1';
+            }
+        } catch (e) { console.warn('model suite failed', e); }
+    }
+    const city = currentCity || 'Mumbai';
+    try {
+        const [lr, cr] = await Promise.all([
+            fetch(`${API_BASE}/model/lstm/${encodeURIComponent(city)}`).catch(() => null),
+            fetch(`${API_BASE}/model/cnn/${encodeURIComponent(city)}`).catch(() => null)
+        ]);
+        if (lr && lr.ok) {
+            const lj = await lr.json().catch(() => null);
+            if (lj && lj.status === 'success' && lj.data) {
+                const d = lj.data;
+                setText('lstm-city', d.city || city);
+                const bars = document.getElementById('lstm-bars');
+                if (bars && Array.isArray(d.hours)) {
+                    const max = Math.max(...d.hours.map((x) => Number(x.intensity_mm) || 0), 0.01);
+                    bars.innerHTML = '';
+                    d.hours.forEach((x) => {
+                        const b = document.createElement('div');
+                        b.className = 'hbar';
+                        b.title = 'h' + x.hour + ': ' + x.intensity_mm + 'mm';
+                        b.style.height = Math.max(3, Math.round((Number(x.intensity_mm) / max) * 100)) + '%';
+                        bars.appendChild(b);
+                    });
+                }
+                setText('lstm-meta', 'Peak ' + d.peak_intensity_mm + 'mm at ' + d.peak_hour + ':00 (' + d.trend + ')');
+            }
+        }
+        if (cr && cr.ok) {
+            const cj = await cr.json().catch(() => null);
+            if (cj && cj.status === 'success' && cj.data) {
+                const d = cj.data;
+                setText('cnn-city', d.city || city);
+                setText('cnn-meta', d.mask_resolution + ' mask · ' + d.flooded_cells_pct + '% flooded cells · confidence ' + d.mean_confidence + ' · ' + d.zones_detected + ' zones · risk ' + d.flood_risk_level);
+            }
+        }
+    } catch (e) { console.warn('lstm/cnn detail failed', e); }
+}
+
 function enterApp() {
     document.getElementById('view-login').hidden = true;
     document.getElementById('app').hidden = false;

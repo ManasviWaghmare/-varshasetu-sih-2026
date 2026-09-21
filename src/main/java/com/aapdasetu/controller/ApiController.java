@@ -7,6 +7,7 @@ import com.aapdasetu.service.ArchitectureService;
 import com.aapdasetu.service.CityService;
 import com.aapdasetu.service.ForecastService;
 import com.aapdasetu.service.InundationService;
+import com.aapdasetu.service.ModelSuiteService;
 import com.aapdasetu.service.RadarService;
 import com.aapdasetu.service.SatelliteService;
 import com.aapdasetu.service.WeatherService;
@@ -34,11 +35,13 @@ public class ApiController {
     private final ArchitectureService architectureService;
     private final RadarService radarService;
     private final SatelliteService satelliteService;
+    private final ModelSuiteService modelSuiteService;
 
     public ApiController(CityService cityService, WeatherService weatherService,
                          ForecastService forecastService, InundationService inundationService,
                          AlertService alertService, ArchitectureService architectureService,
-                         RadarService radarService, SatelliteService satelliteService) {
+                         RadarService radarService, SatelliteService satelliteService,
+                         ModelSuiteService modelSuiteService) {
         this.cityService = cityService;
         this.weatherService = weatherService;
         this.forecastService = forecastService;
@@ -47,6 +50,7 @@ public class ApiController {
         this.architectureService = architectureService;
         this.radarService = radarService;
         this.satelliteService = satelliteService;
+        this.modelSuiteService = modelSuiteService;
     }
 
     @GetMapping("/health")
@@ -156,6 +160,37 @@ public class ApiController {
     @GetMapping("/api/model/stats")
     public ApiResponse<Map<String, Object>> modelStats() {
         return ApiResponse.success(forecastService.getModelStats());
+    }
+
+    @GetMapping("/api/model/suite")
+    public ApiResponse<List<Map<String, Object>>> modelSuite() {
+        return ApiResponse.success(modelSuiteService.getSuite());
+    }
+
+    @GetMapping("/api/model/lstm/{city}")
+    public ResponseEntity<ApiResponse<?>> modelLstm(@PathVariable String city) {
+        City info = cityService.findByName(city);
+        if (info == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("City not found"));
+        }
+        List<Map<String, Object>> preds =
+                forecastService.predictRainfall(info.getName(), info.getState(), 1);
+        double rainMm = preds.isEmpty() ? 0 : toDouble(preds.get(0).get("rainfall_mm"), 0);
+        return ResponseEntity.ok(ApiResponse.success(
+                modelSuiteService.lstmForecast(info.getName(), rainMm)));
+    }
+
+    @GetMapping("/api/model/cnn/{city}")
+    public ResponseEntity<ApiResponse<?>> modelCnn(@PathVariable String city) {
+        City info = cityService.findByName(city);
+        if (info == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error("City not found"));
+        }
+        List<Map<String, Object>> preds =
+                forecastService.predictRainfall(info.getName(), info.getState(), 1);
+        double rainMm = preds.isEmpty() ? 0 : toDouble(preds.get(0).get("rainfall_mm"), 0);
+        return ResponseEntity.ok(ApiResponse.success(
+                modelSuiteService.cnnMapping(info.getName(), inundationService.predict(info, rainMm))));
     }
 
     @GetMapping("/api/radar/{city}")
