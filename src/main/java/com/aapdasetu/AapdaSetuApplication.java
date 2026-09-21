@@ -1,11 +1,11 @@
-package com.varshasetu;
+package com.aapdasetu;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class VarshaSetuApplication {
+public class AapdaSetuApplication {
     public static void main(String[] args) {
-        SpringApplication.run(VarshaSetuApplication.class, args);
+        SpringApplication.run(AapdaSetuApplication.class, args);
     }
 }

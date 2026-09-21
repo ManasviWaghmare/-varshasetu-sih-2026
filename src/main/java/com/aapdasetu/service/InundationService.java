@@ -1,6 +1,6 @@
-package com.varshasetu.service;
+package com.aapdasetu.service;
 
-import com.varshasetu.model.City;
+import com.aapdasetu.model.City;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

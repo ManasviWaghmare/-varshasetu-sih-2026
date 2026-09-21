@@ -1,4 +1,4 @@
-# VarshaSetu — Java Spring Boot Backend
+# AapdaSetu — Java Spring Boot Backend
 
 Java port of the Flask API in `SIH Prototype v2/app.py`. Serves the same
 dashboard (`src/main/resources/static/`, copied from `templates/` + `static/`)
@@ -14,14 +14,14 @@ Build:
 
 ```bash
 mvn package -DskipTests
-java -jar target/varshasetu-1.0.0.jar
+java -jar target/aapdasetu-1.0.0.jar
 ```
 
 Docker:
 
 ```bash
-docker build -t varshasetu-java .
-docker run -p 5000:5000 varshasetu-java
+docker build -t aapdasetu-java .
+docker run -p 5000:5000 aapdasetu-java
 ```
 
 Optional live weather: set `OPENWEATHERMAP_API_KEY` env var; otherwise

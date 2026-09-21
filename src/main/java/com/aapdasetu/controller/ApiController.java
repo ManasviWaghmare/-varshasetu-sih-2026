@@ -1,15 +1,15 @@
-package com.varshasetu.controller;
+package com.aapdasetu.controller;
 
-import com.varshasetu.model.ApiResponse;
-import com.varshasetu.model.City;
-import com.varshasetu.service.AlertService;
-import com.varshasetu.service.ArchitectureService;
-import com.varshasetu.service.CityService;
-import com.varshasetu.service.ForecastService;
-import com.varshasetu.service.InundationService;
-import com.varshasetu.service.RadarService;
-import com.varshasetu.service.SatelliteService;
-import com.varshasetu.service.WeatherService;
+import com.aapdasetu.model.ApiResponse;
+import com.aapdasetu.model.City;
+import com.aapdasetu.service.AlertService;
+import com.aapdasetu.service.ArchitectureService;
+import com.aapdasetu.service.CityService;
+import com.aapdasetu.service.ForecastService;
+import com.aapdasetu.service.InundationService;
+import com.aapdasetu.service.RadarService;
+import com.aapdasetu.service.SatelliteService;
+import com.aapdasetu.service.WeatherService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

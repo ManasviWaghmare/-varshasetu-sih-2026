@@ -11,12 +11,12 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.varshasetu</groupId>
-    <artifactId>varshasetu</artifactId>
+    <groupId>com.aapdasetu</groupId>
+    <artifactId>aapdasetu</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>VarshaSetu</name>
-    <description>VarshaSetu flood forecasting backend - Java Spring Boot port of Flask API</description>
+    <name>AapdaSetu</name>
+    <description>AapdaSetu multi-hazard early-warning backend - Java Spring Boot port of Flask API</description>
 
     <properties>
         <java.version>25</java.version>

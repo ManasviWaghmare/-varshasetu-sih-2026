@@ -1,4 +1,4 @@
-package com.varshasetu.model;
+package com.aapdasetu.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
