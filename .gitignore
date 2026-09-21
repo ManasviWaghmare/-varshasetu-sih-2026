@@ -1,0 +1,24 @@
+# Maven build output
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets (keep .env.example, ignore real one)
+.env
+
+# Logs
+*.log
