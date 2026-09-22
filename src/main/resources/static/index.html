@@ -547,9 +547,9 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
             <div class="panel glass-card search-panel">
                 <input type="text" id="city-search" class="search-input" placeholder="🔍 Search city..." autocomplete="off">
                 <div class="severity-filter scope-filter" id="scope-filter">
-                    <button class="sev-btn active" data-scope="IN">🇮🇳 India</button>
+                    <button class="sev-btn" data-scope="IN">🇮🇳 India</button>
                     <button class="sev-btn" data-scope="WORLD">🌍 World</button>
-                    <button class="sev-btn" data-scope="ALL">All</button>
+                    <button class="sev-btn active" data-scope="ALL">All</button>
                 </div>
                 <div class="city-list" id="city-list"></div>
             </div>
@@ -1146,7 +1146,7 @@ let lastWeather = null;
 let lastForecast = [];
 let lastInundation = null;
 let alertFilter = 'ALL';
-let searchScope = 'IN';
+let searchScope = 'ALL';
 let notifyEnabled = false;
 const seenAlertIds = new Set();
 const CAT_COLORS = { NR: '#10b981', LD: '#34d399', D: '#f59e0b', N: '#f97316', E: '#ef4444', LE: '#b91c1c' };
