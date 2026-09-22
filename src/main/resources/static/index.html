@@ -376,6 +376,12 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 }
 
 
+/* PS banner + scope */
+.ps-banner { text-align: center; font-size: 12px; color: var(--text-secondary); padding: 6px 12px;
+    background: rgba(79, 172, 254, 0.07); border-bottom: 1px solid var(--card-border); }
+.ps-banner strong { color: var(--text-primary); }
+.scope-filter { margin-top: 8px; }
+
 /* Login (weather-app theme) */
 .login-view { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
     background: linear-gradient(160deg, #0b1e3a 0%, #134e7a 45%, #1d7fa8 75%, #37b6ce 100%); overflow: hidden; }
@@ -479,6 +485,8 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
         </div>
     </header>
 
+    <div class="ps-banner">SIH 2026 &bull; PS ID 26071 &bull; <strong>AI/ML Based Integrated Heavy Rainfall Early Warning &amp; Inundation Prediction System</strong> &bull; MoES / IMD &bull; Software &bull; Disaster Management</div>
+
     <div class="alert-ticker-container">
         <div class="alert-ticker" id="alert-ticker">
             <div class="ticker-content" id="ticker-content">Loading alerts...</div>
@@ -515,10 +523,10 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
             <div class="panel glass-card data-sources-panel">
                 <h3>Data Sources</h3>
                 <div class="source-grid" id="data-sources-grid">
-                    <div class="data-source-card"><span class="status-dot green"></span> Satellite</div>
-                    <div class="data-source-card"><span class="status-dot green"></span> Radar</div>
-                    <div class="data-source-card"><span class="status-dot green"></span> AWS</div>
-                    <div class="data-source-card"><span class="status-dot green"></span> NWP</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> Satellite Data</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> Radar Data</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> Observational Weather</div>
+                    <div class="data-source-card"><span class="status-dot green"></span> NWP Model Data</div>
                 </div>
             </div>
         </aside>
@@ -538,6 +546,11 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
         <aside class="sidebar left-sidebar">
             <div class="panel glass-card search-panel">
                 <input type="text" id="city-search" class="search-input" placeholder="🔍 Search city..." autocomplete="off">
+                <div class="severity-filter scope-filter" id="scope-filter">
+                    <button class="sev-btn active" data-scope="IN">🇮🇳 India</button>
+                    <button class="sev-btn" data-scope="WORLD">🌍 World</button>
+                    <button class="sev-btn" data-scope="ALL">All</button>
+                </div>
                 <div class="city-list" id="city-list"></div>
             </div>
             <div class="panel glass-card city-card" id="city-info-panel">
@@ -562,6 +575,7 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
                     </div>
                 </div>
                 <button class="btn-report" id="download-report" title="Download city report as CSV">⬇ Download Report</button>
+                <button class="btn-report" id="download-bulletin" title="Download IMD-style warning bulletin">⬇ IMD Bulletin</button>
             </div>
         </aside>
         <section class="center-section">
@@ -798,6 +812,7 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 
     <footer class="footer" id="app-footer" hidden>
         <p>Powered by IMD Data | Ministry of Earth Sciences | SIH 2026</p>
+        <p class="text-sm">Problem Statement 26071 &bull; India Meteorological Department &bull; Prototype for demonstration</p>
         <p class="team-credit">Team Xyron</p>
     </footer>
 
@@ -1131,6 +1146,7 @@ let lastWeather = null;
 let lastForecast = [];
 let lastInundation = null;
 let alertFilter = 'ALL';
+let searchScope = 'IN';
 let notifyEnabled = false;
 const seenAlertIds = new Set();
 const CAT_COLORS = { NR: '#10b981', LD: '#34d399', D: '#f59e0b', N: '#f97316', E: '#ef4444', LE: '#b91c1c' };
@@ -1321,6 +1337,7 @@ function setupListeners() {
             if (!term) return;
             allCities
                 .filter((c) => c.name && c.name.toLowerCase().includes(term))
+                .filter((c) => searchScope === 'ALL' || (searchScope === 'IN' ? (c.country === 'India') : (c.country && c.country !== 'India')))
                 .slice(0, 20)
                 .forEach((city) => {
                     const div = document.createElement('div');
@@ -1366,6 +1383,20 @@ function setupListeners() {
 
     const dlBtn = document.getElementById('download-report');
     if (dlBtn) dlBtn.addEventListener('click', downloadReport);
+
+    document.querySelectorAll('#scope-filter .sev-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            searchScope = btn.dataset.scope;
+            document.querySelectorAll('#scope-filter .sev-btn').forEach((b) => {
+                b.classList.toggle('active', b === btn);
+            });
+            const si = document.getElementById('city-search');
+            if (si) si.dispatchEvent(new Event('input'));
+        });
+    });
+
+    const blBtn = document.getElementById('download-bulletin');
+    if (blBtn) blBtn.addEventListener('click', downloadBulletin);
 }
 
 async function loadInitialData() {
@@ -1625,6 +1656,52 @@ function downloadReport() {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = currentCity.replace(/\s+/g, '_') + '_flood_report.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+}
+
+
+function downloadBulletin() {
+    if (!currentCity) { alert('Select a city first.'); return; }
+    const cityData = allCities.find((c) => c.name === currentCity);
+    const region = cityData ? (cityData.country || cityData.state || '') : '';
+    const now = new Date();
+    const ist = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const L = [];
+    L.push('INDIA METEOROLOGICAL DEPARTMENT (MoES) — SIH 2026 PROTOTYPE');
+    L.push('PROBLEM STATEMENT 26071: HEAVY RAINFALL EARLY WARNING & INUNDATION PREDICTION');
+    L.push('='.repeat(72));
+    L.push('Station  : ' + currentCity + (region ? ' (' + region + ')' : ''));
+    L.push('Issued   : ' + ist + ' IST   |   Valid 24 hrs');
+    L.push('Data     : Satellite + Radar + Observational Weather + NWP Model');
+    L.push('-'.repeat(72));
+    if (lastWeather) {
+        L.push('OBSERVED: Temp ' + (lastWeather.temperature ?? '--') + 'C, Humidity ' +
+            (lastWeather.humidity ?? '--') + '%, Wind ' + (lastWeather.wind_speed ?? '--') +
+            ' km/h, Rain(1h) ' + (lastWeather.rainfall_1h ?? 0) + ' mm');
+    }
+    L.push('5-DAY RAINFALL FORECAST (Random Forest):');
+    lastForecast.slice(0, 5).forEach((d) => {
+        L.push('  ' + (d.date || '') + ' : ' + (d.rainfall_mm ?? d.predicted_mm ?? 0) +
+            ' mm [' + (d.category || '') + ']');
+    });
+    if (lastInundation) {
+        L.push('INUNDATION: risk ' + String(lastInundation.flood_risk_level || '').toUpperCase() +
+            ', depth ' + (lastInundation.estimated_water_depth_cm ?? 0) + ' cm, affected ' +
+            (lastInundation.affected_area_percentage ?? 0) + '%');
+    }
+    const mine = activeAlerts.filter((a) => a.city === currentCity);
+    if (mine.length > 0) {
+        L.push('WARNING : [' + mine[0].level + '] ' + mine[0].message);
+    } else {
+        L.push('WARNING : No active alert (GREEN).');
+    }
+    L.push('-'.repeat(72));
+    L.push('Action   : Follow IMD colour-code advisories; avoid waterlogged areas.');
+    L.push('Note     : Prototype demonstration output, not an official IMD bulletin.');
+    const blob = new Blob([L.join('\n')], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = currentCity.replace(/\s+/g, '_') + '_IMD_bulletin.txt';
     document.body.appendChild(a); a.click(); a.remove();
 }
 

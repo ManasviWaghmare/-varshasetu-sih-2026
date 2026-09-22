@@ -218,11 +218,11 @@ public class ApiController {
         boolean csvExists = new ClassPathResource("data/rainfall_districtwise_daily_imd.csv").exists();
         String apiKey = System.getenv("OPENWEATHERMAP_API_KEY");
         List<Map<String, Object>> sources = new ArrayList<>();
-        sources.add(source("IMD CSV", "historical", csvExists ? "active" : "missing"));
-        sources.add(source("OpenWeatherMap API", "live",
+        sources.add(source("Satellite Data", "satellite", "active"));
+        sources.add(source("Radar Data", "radar", "active"));
+        sources.add(source("Observational Weather", "live",
                 (apiKey != null && !apiKey.isBlank()) ? "active" : "simulated"));
-        sources.add(source("IMD Radar (simulated)", "radar", "active"));
-        sources.add(source("Satellite (simulated)", "satellite", "active"));
+        sources.add(source("NWP Model Data", "nwp", csvExists ? "active" : "missing"));
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("sources", sources);
         return ApiResponse.success(out);
