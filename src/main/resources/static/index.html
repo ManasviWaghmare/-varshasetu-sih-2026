@@ -396,6 +396,10 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
 .login-guest { background: none; border: none; color: var(--primary-start); cursor: pointer; font-size: 13px; }
 .login-hint { font-size: 12px; color: var(--text-secondary); }
 .login-err { font-size: 13px; color: var(--danger); min-height: 18px; }
+.auth-tabs { display: flex; gap: 8px; justify-content: center; }
+.auth-tabs .sev-btn { padding: 5px 22px; font-size: 13px; }
+#form-login, #form-register { display: flex; flex-direction: column; gap: 12px; }
+#form-login[hidden], #form-register[hidden] { display: none; }
 /* Views */
 [hidden] { display: none !important; }
 .view { animation: fadein 0.3s ease; }
@@ -446,11 +450,23 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
             <div class="login-logo">🛡️ AapdaSetu</div>
             <p class="login-sub">AI Multi-Hazard Early Warning &amp; Flood Prediction</p>
             <div class="login-chips"><span>⛈ Live IMD</span><span>📡 Radar</span><span>🛰 Satellite</span></div>
-            <input id="login-user" class="search-input" placeholder="Username" autocomplete="username">
-            <input id="login-pass" type="password" class="search-input" placeholder="Password" autocomplete="current-password">
-            <button class="btn-report" id="login-btn">Login</button>
-            <button class="login-guest" id="guest-btn">Continue as Guest</button>
-            <p class="login-hint">Demo login: admin / varsha123</p>
+            <div class="auth-tabs">
+                <button class="sev-btn active" id="tab-login">Login</button>
+                <button class="sev-btn" id="tab-register">Register</button>
+            </div>
+            <div id="form-login">
+                <input id="login-user" class="search-input" placeholder="Username" autocomplete="username">
+                <input id="login-pass" type="password" class="search-input" placeholder="Password" autocomplete="current-password">
+                <button class="btn-report" id="login-btn">Login</button>
+            </div>
+            <div id="form-register" hidden>
+                <input id="reg-user" class="search-input" placeholder="Choose a username" autocomplete="username">
+                <input id="reg-pass" type="password" class="search-input" placeholder="Choose a password" autocomplete="new-password">
+                <input id="reg-pass2" type="password" class="search-input" placeholder="Confirm password" autocomplete="new-password">
+                <button class="btn-report" id="register-btn">Create Account</button>
+            </div>
+            <button class="login-guest" id="guest-btn">Skip — Open Dashboard Directly</button>
+            <p class="login-hint">Demo login: admin / varsha123 &bull; Accounts are stored in this browser only (prototype).</p>
             <p class="login-err" id="login-err"></p>
         </div>
     </div>
@@ -625,7 +641,7 @@ code { background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 6px;
                     <button class="sev-btn" data-level="ORANGE">Orange</button>
                     <button class="sev-btn" data-level="YELLOW">Yellow</button>
                 </div>
-                <label class="notify-toggle"><input type="checkbox" id="notify-toggle"> Sound + notification</label>
+                <label class="notify-toggle"><input type="checkbox" id="notify-toggle" checked> Sound + notification</label>
                 <div class="alerts-list" id="active-alerts-list">
                     <div class="loading-skeleton skeleton-alert"></div>
                     <div class="loading-skeleton skeleton-alert"></div>
@@ -1147,7 +1163,8 @@ let lastForecast = [];
 let lastInundation = null;
 let alertFilter = 'ALL';
 let searchScope = 'ALL';
-let notifyEnabled = false;
+let notifyEnabled = true;
+let sharedAudio = null;
 const seenAlertIds = new Set();
 const CAT_COLORS = { NR: '#10b981', LD: '#34d399', D: '#f59e0b', N: '#f97316', E: '#ef4444', LE: '#b91c1c' };
 
@@ -1158,7 +1175,13 @@ const API_BASE = '/api';
 let mapReady = false;
 let modelLoaded = false;
 function ensureMap() {
-    if (mapReady || !window.mapManager) return;
+    if (mapReady || !window.mapManager || typeof L === 'undefined') {
+        if (typeof L === 'undefined') {
+            const m = document.getElementById('map');
+            if (m && !m.dataset.msg) { m.dataset.msg = '1'; m.innerHTML = '<p class="text-secondary" style="padding:20px">Map library failed to load (check internet for Leaflet CDN).</p>'; }
+        }
+        return;
+    }
     window.mapManager.initMap('map');
     window.mapManager.onCitySelect = (name) => { showView('city'); selectCity(name); };
     window.mapManager.updateCityMarkers(allCities, activeAlerts);
@@ -1276,19 +1299,66 @@ function enterApp() {
 }
 function setupAuth() {
     if (sessionStorage.getItem('vs_auth') === '1') { enterApp(); return; }
-    const doLogin = (user, pass) => {
-        const err = document.getElementById('login-err');
-        if ((user === 'admin' && pass === 'varsha123') || user === '__guest__') {
-            sessionStorage.setItem('vs_auth', '1');
-            enterApp();
-        } else if (err) { err.textContent = 'Invalid credentials. Try admin / varsha123 or Guest.'; }
+    const errBox = () => document.getElementById('login-err');
+    const say = (m) => { const e = errBox(); if (e) e.textContent = m; };
+    const getUsers = () => { try { return JSON.parse(localStorage.getItem('aapda_users') || '{}'); } catch (e) { return {}; } };
+    const saveUsers = (u) => localStorage.setItem('aapda_users', JSON.stringify(u));
+    async function hashPw(s) {
+        try {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('aapda::' + s));
+            return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) {
+            let x = 0; for (let i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0;
+            return 'f' + x.toString(16);
+        }
+    }
+    if (!getUsers().admin) { const u = getUsers(); u.admin = 'seeded'; saveUsers(u); }
+    hashPw('varsha123').then((hh) => { const u = getUsers(); if (u.admin === 'seeded') { u.admin = hh; saveUsers(u); } });
+    const startSession = (who) => {
+        try { sessionStorage.setItem('vs_auth', '1'); sessionStorage.setItem('vs_user', who); } catch (e) {}
+        say('');
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { Notification.requestPermission().catch(() => {}); } catch (e) {}
+        }
+        enterApp();
     };
+    const doLogin = async (user, pass) => {
+        if (user === '__guest__') { startSession('Guest'); return; }
+        const u = getUsers();
+        if (user && u[user] && u[user] === await hashPw(pass || '')) { startSession(user); return; }
+        say('Invalid credentials. Register a new account or continue as Guest.');
+    };
+    const doRegister = async () => {
+        const user = document.getElementById('reg-user').value.trim();
+        const p1 = document.getElementById('reg-pass').value;
+        const p2 = document.getElementById('reg-pass2').value;
+        if (user.length < 3) { say('Username needs at least 3 characters.'); return; }
+        if (p1.length < 4) { say('Password needs at least 4 characters.'); return; }
+        if (p1 !== p2) { say('Passwords do not match.'); return; }
+        const u = getUsers();
+        if (u[user]) { say('Username taken — pick another or login.'); return; }
+        u[user] = await hashPw(p1);
+        saveUsers(u);
+        startSession(user);
+    };
+    const tl = document.getElementById('tab-login');
+    const tr = document.getElementById('tab-register');
+    const fl = document.getElementById('form-login');
+    const fr = document.getElementById('form-register');
+    if (tl && tr) {
+        tl.addEventListener('click', () => { tl.classList.add('active'); tr.classList.remove('active'); fl.hidden = false; fr.hidden = true; say(''); });
+        tr.addEventListener('click', () => { tr.classList.add('active'); tl.classList.remove('active'); fr.hidden = false; fl.hidden = true; say(''); });
+    }
     const lb = document.getElementById('login-btn');
     if (lb) lb.addEventListener('click', () => {
         doLogin(document.getElementById('login-user').value.trim(), document.getElementById('login-pass').value);
     });
     const lp = document.getElementById('login-pass');
     if (lp) lp.addEventListener('keydown', (e) => { if (e.key === 'Enter') lb.click(); });
+    const rb = document.getElementById('register-btn');
+    if (rb) rb.addEventListener('click', doRegister);
+    const rp = document.getElementById('reg-pass2');
+    if (rp) rp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doRegister(); });
     const gb = document.getElementById('guest-btn');
     if (gb) gb.addEventListener('click', () => doLogin('__guest__', ''));
     const ob = document.getElementById('logout-btn');
@@ -1310,7 +1380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('mapManager not loaded');
     }
 
-    initCharts();
+    try { initCharts(); } catch (e) { console.warn('charts init failed', e); }
     setupListeners();
     await loadInitialData();
     startIntervals();
@@ -1599,11 +1669,18 @@ function setAlertFilter(level) {
     renderAlertsList();
 }
 
+document.addEventListener('pointerdown', function unlockAudio() {
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) { sharedAudio = sharedAudio || new Ctx(); if (sharedAudio.state === 'suspended') sharedAudio.resume(); }
+    } catch (e) {}
+    document.removeEventListener('pointerdown', unlockAudio);
+});
 function playBeep() {
     try {
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) return;
-        const ctx = new Ctx();
+        const ctx = sharedAudio || new Ctx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
@@ -1768,6 +1845,7 @@ function updateInundationPanel(data) {
 }
 
 function initCharts() {
+    if (typeof Chart === 'undefined') { console.warn('Chart.js unavailable; analytics disabled'); return; }
     if (typeof Chart === 'undefined') {
         console.error('Chart.js not loaded');
         return;
