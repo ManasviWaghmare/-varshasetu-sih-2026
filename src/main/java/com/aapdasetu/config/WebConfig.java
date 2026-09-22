@@ -23,11 +23,3 @@ public class WebConfig implements WebMvcConfigurer {
                 .setCachePeriod(0);
     }
 }
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins("*")
-                .allowedMethods("*")
-                .allowedHeaders("*");
-    }
-}
